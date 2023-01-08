@@ -44,22 +44,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     }
 
+    // Fungsi untuk QRCode
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
         if(result != null) {
             if(result.getContents() == null) {
-                Toast.makeText(this, "Not Scanned", Toast.LENGTH_LONG).show();
-            }
-            // WEBVIEW
-            else if (Patterns.WEB_URL.matcher(result.getContents()).matches()) {
-                Intent visitUrl = new Intent(Intent.ACTION_VIEW, Uri.parse(result.getContents()));
-                startActivity(visitUrl);
-            } else if (result.getContents().startsWith("")) {
-                // QR code berisi lokasi geografis
-                String geoUri = result.getContents();
-                Intent geoIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(geoUri));
-                startActivity(geoIntent);
+                Toast.makeText(this, "Not Scanned", Toast.LENGTH_SHORT).show();
             }
             else {
                 // JSON
@@ -72,17 +63,53 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 }  catch (JSONException e){
                     e.printStackTrace();
-                    Toast.makeText(this, result.getContents(), Toast.LENGTH_LONG).show();
                 }
+
                 // DIAL UP, NOMOR TELEPON
                 try {
                     Intent intent2 = new Intent(Intent.ACTION_DIAL, Uri.parse(result.getContents()));
                     startActivity(intent2);
                 } catch (Exception e){
-                    Toast.makeText(this, "Not Scanned", Toast.LENGTH_LONG).show();
+                    e.printStackTrace();
                 }
-                Toast.makeText(this, "Scanned : " + result.getContents(), Toast.LENGTH_LONG).show();
+
+                // QR code berisi lokasi geografis
+                try {
+                    String geoUri = result.getContents();
+                    Intent geoIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(geoUri));
+                    startActivity(geoIntent);
+                } catch (Exception e){
+                    e.printStackTrace();
+                }
+
+                // Email
+                try{
+                    String scannedContent = result.getContents();
+                    // Cek apakah yang di-scan merupakan alamat email
+                    if (scannedContent.contains("@")) {
+                        // Kirim email
+                        Intent emailIntent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts(
+                                "mailto", scannedContent.replace("http://", ""), null));
+                        emailIntent.putExtra(Intent.EXTRA_SUBJECT, "QR Code Scanner");
+                        emailIntent.putExtra(Intent.EXTRA_TEXT, "Halo, ini email yang dihasilkan dari QR Code Scanner.");
+                        startActivity(Intent.createChooser(emailIntent, "Send email..."));
+                    } else {
+                        // Tampilkan hasil scan
+                        Toast.makeText(this, "Scanned : " + scannedContent, Toast.LENGTH_SHORT).show();
+                    }
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+
+                Toast.makeText(this, "Scanned : " + result.getContents(), Toast.LENGTH_SHORT).show();
             }
+
+            // WEBVIEW
+            if (Patterns.WEB_URL.matcher(result.getContents()).matches()) {
+                Intent visitUrl = new Intent(Intent.ACTION_VIEW, Uri.parse(result.getContents()));
+                startActivity(visitUrl);
+            }
+
         } else {
             super.onActivityResult(requestCode, resultCode, data);
         }
